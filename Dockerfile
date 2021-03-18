@@ -10,5 +10,23 @@ LABEL maintainer="seb@meerw.de" \
     org.label-schema.vcs-url="https://github.com/sbstnmrwld/docker.latex" \
     org.label-schema.vendor="sbstnmrwld"
 
-RUN apk --no-cache add texlive && \
-    rm -rf /var/cache/apk/*
+ENV PATH="/usr/local/texlive/2020/bin/x86_64-linuxmusl:${PATH}"
+
+RUN apk add --no-cache --virtual .build-deps curl fontconfig-dev freetype-dev xz tar wget && \
+    apk add --no-cache perl && \
+    mkdir -p /tmp/install-tl-unx && \
+    curl -L https://ftp.rrze.uni-erlangen.de/ctan/systems/texlive/tlnet/install-tl-unx.tar.gz | tar -xz -C /tmp/install-tl-unx --strip-components=1 && \
+    printf "%s\n" \
+        "selected_scheme scheme-basic" \ 
+        "tlpdbopt_install_docfiles 0" \ 
+        "tlpdbopt_install_srcfiles 0" \
+        "tlpdbopt_autobackup 0" \ 
+        "tlpdbopt_sys_bin /usr/bin" \
+        > /tmp/install-tl-unx/install.profile && \
+    /tmp/install-tl-unx/install-tl --profile=/tmp/install-tl-unx/install.profile && \
+    tlmgr install \
+    #   collection-latexextra \
+    #   collection-fontsrecommended \
+      latexmk && \
+    rm -fr /tmp/install-tl-unx && \
+    apk del .build-deps
